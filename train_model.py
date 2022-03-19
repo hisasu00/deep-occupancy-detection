@@ -1,36 +1,37 @@
 import matplotlib.pyplot as plt
+import torch
 
 
-def train_net(model, criterion, optimizer, num_epochs, train_loader, X_test, Y_test, device):
+def train_net(model, criterion, optimizer, num_epochs, train_loader, test_x, test_y, device):
 
     train_losses = []
     test_losses = []
 
     for _ in range(num_epochs):
         runnning_loss = 0.0
-        for idx, (xx, yy) in enumerate(train_loader):
-            xx = xx.to(device)
-            yy = yy.to(device)
+        for idx, (batch_x, batch_y) in enumerate(train_loader):
+            batch_x = batch_x.to(device)
+            batch_y = batch_y.to(device)
 
             # forward
-            Y_score = model(xx)
-            loss = criterion(Y_score, yy)
-            
+            score_y = model(batch_x)
+            loss = criterion(score_y, batch_y)
+
             # backward
             optimizer.zero_grad()
             loss.backward()
-            
+
             # update params
             optimizer.step()
-            
+
             # add train loss
             runnning_loss += loss.item()
         train_losses.append(runnning_loss / idx)
 
         # add test loss
         model.eval()
-        Y_pred = model(X_test)
-        test_loss = criterion(Y_pred, Y_test)
+        score_y = model(test_x)
+        test_loss = criterion(score_y, test_y)
         test_losses.append(test_loss.item())
 
     # plot loss curve
@@ -40,5 +41,8 @@ def train_net(model, criterion, optimizer, num_epochs, train_loader, X_test, Y_t
     plt.ylabel("loss")
     plt.legend()
     plt.savefig("loss.png")
+
+    # save state_dict
+    torch.save(model.state_dict(), "./mlp.pth")
 
     return model

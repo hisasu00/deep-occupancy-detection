@@ -3,13 +3,13 @@ import torch.nn.functional as F
 
 
 class MLP(nn.Module):
-    def __init__(self, input_size, num_classes, p):
+    def __init__(self, input_size, num_classes, dropout_ratio):
         super().__init__()
         self.fc1 = nn.Linear(input_size, 10)
         self.fc2 = nn.Linear(10, 15)
         self.fc3 = nn.Linear(15, num_classes)
         self.bn1 = nn.BatchNorm1d(10)
-        self.dropout = nn.Dropout(p)
+        self.dropout = nn.Dropout(dropout_ratio)
 
     def forward(self, x):
         x = self.dropout(F.relu(self.fc1(x)))
