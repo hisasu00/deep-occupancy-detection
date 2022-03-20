@@ -67,9 +67,8 @@ def train_timeseries_net(model, criterion, optimizer, num_epochs,
             loss.backward()
 
             # update params
-            torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=1)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
             optimizer.step()
-            #torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=1)
 
             # add training loss
             runnning_loss += loss.item()
