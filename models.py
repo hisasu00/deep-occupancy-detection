@@ -41,3 +41,48 @@ class RNN(nn.Module):
         out = self.dropout(F.relu(self.fc2(out)))
         out = F.relu(self.fc3(out))
         return out
+
+
+class AttentionRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes, p):
+        super().__init__()
+
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.rnn = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.fc1 = nn.Linear(2 * hidden_size, 8)
+        self.bn1 = nn.BatchNorm1d(8)
+        self.fc2 = nn.Linear(8, 4)
+        self.fc3 = nn.Linear(4, num_classes)
+        self.dropout = nn.Dropout(p)
+
+    def forward(self, x, device):
+        h0 = torch.zeros(self.num_layers, x.shape[0], self.hidden_size).to(device)
+        c0 = torch.zeros(self.num_layers, x.shape[0], self.hidden_size).to(device)
+        hs, _ = self.rnn(x, (h0,c0))
+
+        contexts = get_contexts_by_attention(hs, device)
+
+        out = torch.cat((contexts, hs), dim=2)
+        out = self.dropout(F.relu(self.fc1(out)))
+        out = out.reshape(x.shape[0], 8, x.shape[1])
+        out = self.bn1(out)
+        out = out.reshape(x.shape[0], x.shape[1], 8)
+
+        out = self.dropout(F.relu(self.fc2(out)))
+        out = F.relu(self.fc3(out))
+        return out
+
+
+def get_contexts_by_attention(hs, device):
+    N, T, H = hs.shape
+    contexts = torch.zeros(N, T, H).to(device)
+    for t in range(T):
+        h_t = hs[:, t, :].unsqueeze(1)
+        h_t = h_t.repeat(1, T, 1)
+        attention = (h_t*hs).sum(axis=2)
+        attention = attention.unsqueeze(2)
+        attention = attention.repeat(1, 1, H)
+        context = (attention*hs).sum(axis=1)
+        contexts[:, t, :] = context
+    return contexts
