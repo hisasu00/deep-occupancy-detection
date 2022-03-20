@@ -1,6 +1,9 @@
 # .csv
 *.csv
 
+# .pylintrc
+*.pylintrc
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
