@@ -44,7 +44,7 @@ class RNN(nn.Module):
 
 
 class AttentionRNN(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes, p):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes, dropout_ratio):
         super().__init__()
 
         self.hidden_size = hidden_size
@@ -54,7 +54,7 @@ class AttentionRNN(nn.Module):
         self.bn1 = nn.BatchNorm1d(8)
         self.fc2 = nn.Linear(8, 4)
         self.fc3 = nn.Linear(4, num_classes)
-        self.dropout = nn.Dropout(p)
+        self.dropout = nn.Dropout(dropout_ratio)
 
     def forward(self, x, device):
         h0 = torch.zeros(self.num_layers, x.shape[0], self.hidden_size).to(device)
@@ -81,6 +81,7 @@ def get_contexts_by_attention(hs, device):
         h_t = hs[:, t, :].unsqueeze(1)
         h_t = h_t.repeat(1, T, 1)
         attention = (h_t*hs).sum(axis=2)
+        attention = F.softmax(attention, dim=1)
         attention = attention.unsqueeze(2)
         attention = attention.repeat(1, 1, H)
         context = (attention*hs).sum(axis=1)
