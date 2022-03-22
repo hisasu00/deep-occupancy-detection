@@ -76,7 +76,7 @@ def train_timeseries_net(model, criterion, optimizer, num_epochs,
 
         # add test loss
         pred_y = model(test_x, device)
-        test_loss = criterion(pred_y.reshape(-1, 2), test_y)
+        test_loss = criterion(pred_y.reshape(-1, 2), test_y.reshape(-1))
         test_losses.append(test_loss.item())
 
     # plot loss curve
