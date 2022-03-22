@@ -54,7 +54,8 @@ class AttentionRNN(nn.Module):
         self.bn1 = nn.BatchNorm1d(8)
         self.fc2 = nn.Linear(8, 4)
         self.fc3 = nn.Linear(4, num_classes)
-        self.dropout = nn.Dropout(dropout_ratio)
+        self.dropout1 = nn.Dropout(dropout_ratio)
+        self.dropout2 = nn.Dropout(dropout_ratio)
 
     def forward(self, x, device):
         h0 = torch.zeros(self.num_layers, x.shape[0], self.hidden_size).to(device)
@@ -64,12 +65,12 @@ class AttentionRNN(nn.Module):
         contexts = get_contexts_by_attention(hs, device)
 
         out = torch.cat((contexts, hs), dim=2)
-        out = self.dropout(F.relu(self.fc1(out)))
+        out = self.dropout1(F.relu(self.fc1(out)))
         out = out.reshape(x.shape[0], 8, x.shape[1])
         out = self.bn1(out)
         out = out.reshape(x.shape[0], x.shape[1], 8)
 
-        out = self.dropout(F.relu(self.fc2(out)))
+        out = self.dropout2(F.relu(self.fc2(out)))
         out = F.relu(self.fc3(out))
         return out
 
