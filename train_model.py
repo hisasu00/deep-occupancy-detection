@@ -80,11 +80,12 @@ def train_timeseries_net(model, criterion, optimizer, num_epochs,
         test_losses.append(test_loss.item())
 
     # plot loss curve
-    plt.plot(train_losses, label="train")
-    plt.plot(test_losses, label="test")
+    plt.plot(train_losses, label="train", alpha=0.5, c="r")
+    plt.plot(test_losses, label="test", alpha=0.5, c="b")
     plt.xlabel("epoch")
     plt.ylabel("loss")
     plt.legend()
+    plt.ylim(0, 1.0)
     plt.savefig("loss.png")
 
     # save state_dict

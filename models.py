@@ -50,12 +50,16 @@ class AttentionRNN(nn.Module):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.rnn = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.fc1 = nn.Linear(2 * hidden_size, 8)
-        self.bn1 = nn.BatchNorm1d(8)
-        self.fc2 = nn.Linear(8, 4)
-        self.fc3 = nn.Linear(4, num_classes)
+
         self.dropout1 = nn.Dropout(dropout_ratio)
+        self.fc1 = nn.Linear(2 * hidden_size, 50)
+        self.bn1 = nn.BatchNorm1d(50)
+
         self.dropout2 = nn.Dropout(dropout_ratio)
+        self.fc2 = nn.Linear(50, 25)
+
+        self.fc3 = nn.Linear(25, 10)
+        self.fc4 = nn.Linear(10, num_classes)
 
     def forward(self, x, device):
         h0 = torch.zeros(self.num_layers, x.shape[0], self.hidden_size).to(device)
@@ -63,15 +67,17 @@ class AttentionRNN(nn.Module):
         hs, _ = self.rnn(x, (h0,c0))
 
         contexts = get_contexts_by_attention(hs, device)
-
         out = torch.cat((contexts, hs), dim=2)
-        out = self.dropout1(F.relu(self.fc1(out)))
-        out = out.reshape(x.shape[0], 8, x.shape[1])
-        out = self.bn1(out)
-        out = out.reshape(x.shape[0], x.shape[1], 8)
 
+        out = self.dropout1(F.relu(self.fc1(out)))
+        out = out.reshape(x.shape[0], out.shape[2], x.shape[1])
+        out = self.bn1(out)
+
+        out = out.reshape(x.shape[0], x.shape[1], out.shape[1])
         out = self.dropout2(F.relu(self.fc2(out)))
+
         out = F.relu(self.fc3(out))
+        out = F.relu(self.fc4(out))
         return out
 
 
