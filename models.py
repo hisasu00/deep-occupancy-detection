@@ -81,7 +81,7 @@ class AttentionRNN(nn.Module):
         return out
 
 
-def get_contexts_by_attention(hs, device):
+def get_contexts_by_selfattention(hs, device):
     N, T, H = hs.shape
     contexts = torch.zeros(N, T, H).to(device)
     for t in range(T):
