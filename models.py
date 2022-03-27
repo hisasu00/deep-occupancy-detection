@@ -136,7 +136,7 @@ class Decoder(nn.Module):
         sampled = torch.zeros(start_x.shape[0], target_len).to(device)
         scores = torch.zeros(start_x.shape[0], target_len, 2).to(device)
 
-        for t in range(1, target_len, 1):
+        for t in range(target_len):
             start_x = start_x.unsqueeze(2)
             start_x = start_x.to(torch.float32)
 
@@ -149,7 +149,7 @@ class Decoder(nn.Module):
             output = self.fc(output)
             predict = output.argmax(axis=2)
 
-            start_x = x[:, t] if random.random() < 0.5 else predict
+            start_x = x[:, t+1] if random.random() < 0.5 else predict
             sampled[:, t] = start_x.reshape(-1)
             output = output.squeeze(1)
             scores[:, t, :] = output
