@@ -133,7 +133,6 @@ class Decoder(nn.Module):
 
     def generate(self, h_t, c_t, encoder_hs, x, target_len, device):
         start_x = x[:, 0]
-        sampled = torch.zeros(start_x.shape[0], target_len).to(device)
         scores = torch.zeros(start_x.shape[0], target_len, 2).to(device)
 
         for t in range(target_len):
@@ -150,14 +149,13 @@ class Decoder(nn.Module):
             predict = output.argmax(axis=2)
 
             if t+1 == target_len:
-                pass
+                start_x = predict
             else:
                 start_x = x[:, t+1] if random.random() < 0.5 else predict
 
-            sampled[:, t] = start_x.reshape(-1)
             output = output.squeeze(1)
             scores[:, t, :] = output
-        return sampled, scores
+        return scores
 
 
 class Seq2Seq(nn.Module):
@@ -173,8 +171,8 @@ class Seq2Seq(nn.Module):
 
     def generate(self, enc_input, dec_input, target_len, device):
         encoder_hs, h_t, c_t = self.encoder.forward(enc_input)
-        sampled, scores = self.decoder.generate(h_t, c_t, encoder_hs, dec_input, target_len, device)
-        return sampled, scores
+        scores = self.decoder.generate(h_t, c_t, encoder_hs, dec_input, target_len, device)
+        return scores
 
 
 def get_contexts_and_decoderhs_by_attention(encoder_hs, decoder_hs, device):
