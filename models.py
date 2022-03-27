@@ -149,7 +149,7 @@ class Decoder(nn.Module):
             predict = output.argmax(axis=2)
 
             if t+1 == target_len:
-                start_x = predict
+                pass
             else:
                 start_x = x[:, t+1] if random.random() < 0.5 else predict
 
