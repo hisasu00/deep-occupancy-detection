@@ -136,7 +136,7 @@ class Decoder(nn.Module):
         sampled = torch.zeros(start_x.shape[0], target_len).to(device)
         scores = torch.zeros(start_x.shape[0], target_len, 2).to(device)
 
-        for t in range(target_len):
+        for t in range(1, target_len, 1):
             start_x = start_x.unsqueeze(2)
             start_x = start_x.to(torch.float32)
 

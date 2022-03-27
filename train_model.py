@@ -47,6 +47,7 @@ def train_net(model, criterion, optimizer, num_epochs, train_loader, test_x, tes
 
     return model
 
+
 def train_timeseries_net(model, criterion, optimizer, num_epochs,
                          train_loader, test_x, test_y, device):
     train_losses = []
