@@ -103,12 +103,12 @@ def train_seq2seq_net(model, criterion, optimizer,
         for idx, (batch_x, batch_y) in enumerate(train_loader):
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
-            decoder_yy = batch_y[:, :-1, :]
-            decoder_tt = batch_y[:, 1:, :].to(torch.long)
+            decoder_y = batch_y[:, :-1, :]
+            decoder_t = batch_y[:, 1:, :].to(torch.long)
 
             # forward
-            score_y = model(batch_x, decoder_yy, device)
-            loss = criterion(score_y.reshape(-1, 2), decoder_tt.reshape(-1))
+            score_y = model(batch_x, decoder_y, device)
+            loss = criterion(score_y.reshape(-1, 2), decoder_t.reshape(-1))
 
             # backward
             optimizer.zero_grad()
