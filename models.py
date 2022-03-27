@@ -149,7 +149,11 @@ class Decoder(nn.Module):
             output = self.fc(output)
             predict = output.argmax(axis=2)
 
-            start_x = x[:, t+1] if random.random() < 0.5 else predict
+            if t+1 == target_len:
+                pass
+            else:
+                start_x = x[:, t+1] if random.random() < 0.5 else predict
+
             sampled[:, t] = start_x.reshape(-1)
             output = output.squeeze(1)
             scores[:, t, :] = output
