@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import torch
 
-
 def train_net(model, criterion, optimizer, num_epochs, train_loader, test_x, test_y, device):
 
     train_losses = []
@@ -61,7 +60,9 @@ def train_timeseries_net(model, criterion, optimizer, num_epochs,
 
             # forward
             score_y = model(batch_x, device)
-            loss = criterion(score_y.reshape(-1, 2), batch_y.reshape(-1))
+            score_y = torch.sigmoid(score_y.reshape(-1))
+            batch_y = batch_y.reshape(-1)
+            loss = criterion(score_y, batch_y)
 
             # backward
             optimizer.zero_grad()
@@ -77,7 +78,9 @@ def train_timeseries_net(model, criterion, optimizer, num_epochs,
 
         # add test loss
         pred_y = model(test_x, device)
-        test_loss = criterion(pred_y.reshape(-1, 2), test_y.reshape(-1))
+        pred_y = torch.sigmoid(pred_y.reshape(-1))
+        test_y = test_y.reshape(-1)
+        test_loss = criterion(pred_y, test_y)
         test_losses.append(test_loss.item())
 
     # plot loss curve
