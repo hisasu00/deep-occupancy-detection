@@ -132,7 +132,7 @@ class Decoder(nn.Module):
         return predictions
 
     def generate(self, h_t, c_t, encoder_hs, x, target_len, device):
-        start_x = x[:, 0]
+        start_x = x[:, 0, :]
         scores = torch.zeros(start_x.shape[0], target_len, 2).to(device)
 
         for t in range(target_len):
@@ -151,7 +151,7 @@ class Decoder(nn.Module):
             if t+1 == target_len:
                 pass
             else:
-                start_x = x[:, t+1] if random.random() < 0.5 else predict
+                start_x = x[:, t+1, :] if random.random() < 0.5 else predict
 
             output = output.squeeze(1)
             scores[:, t, :] = output
