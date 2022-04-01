@@ -8,6 +8,7 @@ def train_net(model, criterion, optimizer, num_epochs, train_loader, test_x, tes
 
     for _ in range(num_epochs):
         runnning_loss = 0.0
+        idx = None
         for idx, (batch_x, batch_y) in enumerate(train_loader):
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
@@ -54,6 +55,7 @@ def train_timeseries_net(model, criterion, optimizer, num_epochs,
 
     for _ in range(num_epochs):
         runnning_loss = 0.0
+        idx = None
         for idx, (batch_x, batch_y) in enumerate(train_loader):
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
@@ -103,6 +105,7 @@ def train_seq2seq_net(model, criterion, optimizer,
 
     for _ in range(num_epochs):
         runnning_loss = 0.0
+        idx = None
         for idx, (batch_x, batch_y) in enumerate(train_loader):
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
