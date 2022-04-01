@@ -1,3 +1,9 @@
+# .pth
+*.pth
+
+# .png
+*.png
+
 # data directory
 /data
 
