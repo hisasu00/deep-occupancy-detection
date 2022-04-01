@@ -79,7 +79,7 @@ class AttentionRNN(nn.Module):
         out = self.dropout2(F.relu(self.fc2(out)))
 
         out = F.relu(self.fc3(out))
-        out = F.relu(self.fc4(out))
+        out = self.fc4(out)
         return out
 
 
