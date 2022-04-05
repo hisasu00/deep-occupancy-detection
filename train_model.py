@@ -54,6 +54,7 @@ def train_timeseries_net(model, criterion, optimizer, num_epochs,
     test_losses = []
 
     for _ in range(num_epochs):
+        model.train()
         runnning_loss = 0.0
         idx = None
         for idx, (batch_x, batch_y) in enumerate(train_loader):
@@ -79,6 +80,7 @@ def train_timeseries_net(model, criterion, optimizer, num_epochs,
         train_losses.append(runnning_loss / idx)
 
         # add test loss
+        model.eval()
         pred_y = model(test_x, device)
         pred_y = torch.sigmoid(pred_y.reshape(-1))
         test_y = test_y.reshape(-1)
