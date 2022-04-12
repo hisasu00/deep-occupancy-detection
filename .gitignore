@@ -4,9 +4,6 @@
 # .png
 *.png
 
-# data directory
-/data
-
 # .csv
 *.csv
 
