@@ -49,7 +49,7 @@ def to_interval_occupancy(df, interval):
     for row, vals in df.iterrows():
         intervaled_occupancy=[]
         for t in range(0,86400,interval):
-            if np.mean(vals.values[t:t+interval]==1) > 0.85:
+            if np.mean(vals.values[t:t+interval]==1) > 0.80:
                 intervaled_occupancy.append(1)
             else:
                 intervaled_occupancy.append(0)
