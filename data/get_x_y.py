@@ -7,13 +7,13 @@ import numpy as np
 import pandas as pd
 
 
-def get_month_energy(id, year, month):
+def get_month_energy(house_id, year, month):
     month_energy = {}
     num_days  = calendar.monthrange(year, month)[1]
     for day in range(1, num_days+1, 1):
         try:
             date_string = datetime.date(year, month, day)
-            energy = pd.read_csv('./ecodataset/Energy/0'+str(id)+'/'+str(date_string)+".csv", header=None)
+            energy = pd.read_csv('./ecodataset/Energy/0'+str(house_id)+'/'+str(date_string)+".csv", header=None)
             month_energy[str(date_string)] = energy[0].values
             # energy shape of (60*60*24=86400, 16), the first column is the main trunk value.
         except FileNotFoundError:
