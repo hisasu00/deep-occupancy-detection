@@ -118,6 +118,12 @@ def build_ratio(date_columns, energy, intervals):
 
 
 def get_corresponding_energy(occupancy_columns, energy_df):
+    """
+
+    Extract data on days when home conditions are observed,
+    from energy data for a certain periods.
+
+    """
     energies = []
     where_day_in_string = 10
     for date in occupancy_columns:
