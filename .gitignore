@@ -4,9 +4,6 @@
 # .png
 *.png
 
-# .csv
-*.csv
-
 # .pylintrc
 *.pylintrc
 
