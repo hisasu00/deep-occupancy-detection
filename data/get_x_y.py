@@ -10,65 +10,61 @@ import pandas as pd
 def get_month_energy(id, year, month):
     month_energy = {}
     num_days  = calendar.monthrange(year, month)[1]
-
     for day in range(1, num_days+1, 1):
         try:
             date_string = datetime.date(year, month, day)
             energy = pd.read_csv('./ecodataset/Energy/0'+str(id)+'/'+str(date_string)+".csv", header=None)
-            month_energy[str(date_string)]=energy[0].values
-            # energy shape of (60*60*24=86400, 16), the first row is main trunk value
-
+            month_energy[str(date_string)] = energy[0].values
+            # energy shape of (60*60*24=86400, 16), the first column is the main trunk value.
         except FileNotFoundError:
             print(f"{date_string}:FileNotFoundError")
             print("skip this date")
             pass
-
     return pd.DataFrame(month_energy)
 
 
-def interpolate_missing(df):
-    df = df.replace(-1, np.nan)
-    for col in df.columns:
-        if any(pd.isnull(df[col].values)):
-            df[col] = df[col].interpolate(limit=None, limit_direction='both').values
-    return df
+def interpolate_missing(energy):
+    energy = energy.replace(-1, np.nan)
+    # -1 is missing value defined by ECO data set
+    for day in energy.columns:
+        if any(pd.isnull(energy[day].values)):
+            energy[day] = energy[day].interpolate(limit=None, limit_direction='both').values
+    return energy
 
 
-def to_interval_energy(df, interval):
-    dic={}
-    for col, vals in df.iteritems():
+def to_intervals_energy(energy, intervals):
+    intervaled_energies = {}
+    for day, vals in energy.iteritems():
         intervaled_energy = []
-        for t in range(0, 86400, interval):
-            intervaled_energy.append(sum(vals.values[t:t+interval]))
-        dic[col] = intervaled_energy
-    return pd.DataFrame(dic)
+        for t in range(0, 86400, intervals):
+            sumed_value = sum(vals.values[t:t+intervals])
+            intervaled_energy.append(sumed_value)
+        intervaled_energies[day] = intervaled_energy
+    return pd.DataFrame(intervaled_energies)
 
 
-def to_interval_occupancy(df, interval):
-    dic={}
-    for row, vals in df.iterrows():
-        intervaled_occupancy=[]
-        for t in range(0,86400,interval):
-            if np.mean(vals.values[t:t+interval]==1) > 0.80:
+def to_intervals_occupancy(occupancy, intervals):
+    intervaled_occupancys = {}
+    for day, vals in occupancy.iterrows():
+        intervaled_occupancy = []
+        for t in range(0, 86400, intervals):
+            if np.mean(vals.values[t:t+intervals]==1) > 0.80:
                 intervaled_occupancy.append(1)
             else:
                 intervaled_occupancy.append(0)
-        dic[row]=intervaled_occupancy
-    return pd.DataFrame(dic)
+        intervaled_occupancys[day] = intervaled_occupancy
+    return pd.DataFrame(intervaled_occupancys)
 
 
 def get_targret_energy(house_id, target_months, interval_s):
-    df_energy = pd.DataFrame()
-
+    energies = pd.DataFrame()
     for month in target_months:
         year = 2013 if month == 1 else 2012
-        
-        tmp_energy = get_month_energy(house_id, year, month)
-        tmp_energy = interpolate_missing(tmp_energy)
-        tmp_energy = to_interval_energy(tmp_energy, interval_s)
-        
-        df_energy = pd.concat([df_energy, tmp_energy], axis=1)
-    return df_energy
+        energy = get_month_energy(house_id, year, month)
+        energy = interpolate_missing(energy)
+        energy = to_intervals_energy(energy, interval_s)
+        energies = pd.concat([energies, energy], axis=1)
+    return energies
 
 
 def get_numerator(date, energy):
@@ -76,40 +72,37 @@ def get_numerator(date, energy):
     return numerator
 
 
-def get_denominator(date, interval, energy):
+def get_denominator(date, intervals, energy):
 
     # maximum for 2 weeks before and after
     datetime_date = datetime.datetime.strptime(date, '%Y-%m-%d')
     timedelta_14days = datetime.timedelta(days=14)
     timedelta_1day = datetime.timedelta(days=1)
-
-    denominator = energy.T[str(datetime_date - timedelta_14days) : str(datetime_date + timedelta_14days)].max()
-    denominator_1day_before = energy.T[str(datetime_date - timedelta_1day - timedelta_14days) : str(datetime_date - timedelta_1day + timedelta_14days)].max()
-    denominator_1day_after = energy.T[str(datetime_date + timedelta_1day - timedelta_14days) : str(datetime_date + timedelta_1day + timedelta_14days)].max()
+    candidate = energy.T[str(datetime_date - timedelta_14days) : str(datetime_date + timedelta_14days)].max()
+    # energy.T shape of (num_days, 24)
+    candidate_1day_before = energy.T[str(datetime_date - timedelta_1day - timedelta_14days) : str(datetime_date - timedelta_1day + timedelta_14days)].max()
+    candidate_1day_after = energy.T[str(datetime_date + timedelta_1day - timedelta_14days) : str(datetime_date + timedelta_1day + timedelta_14days)].max()
 
     # maximum for 30 minutes before and after
-    list_1=[]
-    T = interval -1 
+    denominator = []
+    T = intervals -1 
     T_minus1 = T - 1 
-    for time in range(interval):
+    for time in range(intervals):
         if time == 0:
-            max_val = max([denominator_1day_before[T], denominator[0], denominator[1]])
-            list_1.append(max_val)
-
+            max_val = max([candidate_1day_before[T], candidate[0], candidate[1]])
+            denominator.append(max_val)
         elif time == T:
-            max_val  = max([denominator[T_minus1], denominator[T], denominator_1day_after[0]])
-            list_1.append(max_val)
-
+            max_val  = max([candidate[T_minus1], candidate[T], candidate_1day_after[0]])
+            denominator.append(max_val)
         else:
-            max_val = max([denominator[time - 1], denominator[time], denominator[time + 1]])
-            list_1.append(max_val)
-    denominator = list_1
+            max_val = max([candidate[time - 1], candidate[time], candidate[time + 1]])
+            denominator.append(max_val)
 
     return denominator
 
 
-def build_ratio(date_columns, energy, interval):
-    dic={}
+def build_ratio(date_columns, energy, intervals):
+    ratios={}
     for date in date_columns:
         # format date
         date = str(datetime.datetime.strptime(date, '%d-%b-%Y'))
@@ -118,27 +111,25 @@ def build_ratio(date_columns, energy, interval):
 
         # build energy data ratio
         numerator =  get_numerator(date, energy)
-        denominator = get_denominator(date, interval, energy)
+        denominator = get_denominator(date, intervals, energy)
         ratio = (numerator / denominator).round(7)
-        dic[date]=ratio
-    return pd.DataFrame(dic)
+        ratios[date] = ratio
+    return pd.DataFrame(ratios)
 
 
 def get_corresponding_energy(occupancy_columns, energy_df):
-    list_1=[]
+    energies = []
     where_day_in_string = 10
-
-    for i in occupancy_columns:
-        date = str(datetime.datetime.strptime(i, '%d-%b-%Y'))
+    for date in occupancy_columns:
+        date = str(datetime.datetime.strptime(date, '%d-%b-%Y'))
         date = date[:where_day_in_string]
-
-        for val in energy_df[date].values:
-            list_1.append(val)     
-    return list_1
+        energies += energy_df[date].values.tolist()
+    return energies
 
 
 def get_weekdays(target_days):
-    target_days= pd.DataFrame(target_days)
+    target_days = pd.DataFrame(target_days)
+    # target_days shape of (num_days, 1)
     target_days = pd.to_datetime(target_days[0], format="%d-%b-%Y")
     weekdays = target_days.dt.weekday
     weekdays = (weekdays == 6).values
@@ -147,40 +138,35 @@ def get_weekdays(target_days):
     return weekdays
 
 
-def get_am_pm_columns(df):
-    
+def get_am_pm(features):    
     am_pm = []
-    for time in df["Time"]:
-        morning = [6, 7, 8, 9, 10]
-        lunch = [11, 12, 13, 14, 15, 16]
+    morning = [6, 7, 8, 9, 10]
+    lunch = [11, 12, 13, 14, 15, 16]
+    for time in features["Time"]:
         if time in morning:
             am_pm.append(0)
         elif time in lunch:
             am_pm.append(1)
         else:
             am_pm.append(2)
-    df["Time"] = am_pm
-    am_pm = pd.get_dummies(df["Time"])
-    df = df.drop(columns="Time")
-    df = pd.concat([df, am_pm], axis=1)
-    df = df.rename({0: "Am", 1: "Lunch", 2: "Pm"}, axis=1)
-    
-    return df
+    features["Time"] = am_pm
+    am_pm = pd.get_dummies(features["Time"])
+    features = features.drop(columns="Time")
+    features = pd.concat([features, am_pm], axis=1)
+    features = features.rename({0: "Am", 1: "Lunch", 2: "Pm"}, axis=1)
+    return features
 
 
 def create_features(energy, col):
-    mean_list=[]
-    max_list=[]
-    min_list=[]
-    std_list=[]
-    range_list=[]
-    time_list=[]
-
+    means = []
+    maxs = []
+    mins = []
+    stds = []
+    ranges = []
     for t in range(0, len(energy), 2):
-        mean_list.append(np.mean(energy[t:t+2]))
-        max_list.append(np.max(energy[t:t+2]))
-        min_list.append(np.min(energy[t:t+2]))
-        std_list.append(np.std(energy[t:t+2]))
-        range_list.append(abs(energy[t+1] - energy[t]))
-
-    return mean_list, max_list, min_list, std_list, range_list
+        means.append(np.mean(energy[t:t+2]))
+        maxs.append(np.max(energy[t:t+2]))
+        mins.append(np.min(energy[t:t+2]))
+        stds.append(np.std(energy[t:t+2]))
+        ranges.append(abs(energy[t+1] - energy[t]))
+    return means, maxs, mins, stds, ranges
