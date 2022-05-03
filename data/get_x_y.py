@@ -1,29 +1,29 @@
-from unicodedata import name
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
-from datetime import datetime as dt
-import datetime
 import calendar
+import datetime
+from unicodedata import name
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 
 def get_month_energy(id, year, month):
-    dic={}
+    month_energy = {}
     num_days  = calendar.monthrange(year, month)[1]
 
     for day in range(1, num_days+1, 1):
-    
         try:
             date_string = datetime.date(year, month, day)
             energy = pd.read_csv('./ecodataset/Energy/0'+str(id)+'/'+str(date_string)+".csv", header=None)
-            dic[str(date_string)]=energy[0].values
+            month_energy[str(date_string)]=energy[0].values
+            # energy shape of (60*60*24=86400, 16), the first row is main trunk value
 
         except FileNotFoundError:
             print(f"{date_string}:FileNotFoundError")
             print("skip this date")
             pass
 
-    return pd.DataFrame(dic)
+    return pd.DataFrame(month_energy)
 
 
 def interpolate_missing(df):
@@ -79,7 +79,7 @@ def get_numerator(date, energy):
 def get_denominator(date, interval, energy):
 
     # maximum for 2 weeks before and after
-    datetime_date = dt.strptime(date, '%Y-%m-%d')
+    datetime_date = datetime.datetime.strptime(date, '%Y-%m-%d')
     timedelta_14days = datetime.timedelta(days=14)
     timedelta_1day = datetime.timedelta(days=1)
 
@@ -112,7 +112,7 @@ def build_ratio(date_columns, energy, interval):
     dic={}
     for date in date_columns:
         # format date
-        date = str(dt.strptime(date, '%d-%b-%Y'))
+        date = str(datetime.datetime.strptime(date, '%d-%b-%Y'))
         where_day_in_string = 10
         date = date[:where_day_in_string]
 
@@ -129,7 +129,7 @@ def get_corresponding_energy(occupancy_columns, energy_df):
     where_day_in_string = 10
 
     for i in occupancy_columns:
-        date = str(dt.strptime(i, '%d-%b-%Y'))
+        date = str(datetime.datetime.strptime(i, '%d-%b-%Y'))
         date = date[:where_day_in_string]
 
         for val in energy_df[date].values:
