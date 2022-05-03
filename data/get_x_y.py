@@ -1,8 +1,6 @@
 import calendar
 import datetime
-from unicodedata import name
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -13,7 +11,8 @@ def get_month_energy(house_id, year, month):
     for day in range(1, num_days+1, 1):
         try:
             date_string = datetime.date(year, month, day)
-            energy = pd.read_csv('./ecodataset/Energy/0'+str(house_id)+'/'+str(date_string)+".csv", header=None)
+            path = './ecodataset/Energy/0'+str(house_id)+'/'+str(date_string)+".csv"
+            energy = pd.read_csv(path, header=None)
             month_energy[str(date_string)] = energy[0].values
             # energy shape of (60*60*24=86400, 16), the first column is the main trunk value.
         except FileNotFoundError:
@@ -78,15 +77,17 @@ def get_denominator(date, intervals, energy):
     datetime_date = datetime.datetime.strptime(date, '%Y-%m-%d')
     timedelta_14days = datetime.timedelta(days=14)
     timedelta_1day = datetime.timedelta(days=1)
-    candidate = energy.T[str(datetime_date - timedelta_14days) : str(datetime_date + timedelta_14days)].max()
+    candidate = energy.T[str(datetime_date - timedelta_14days):
+                         str(datetime_date + timedelta_14days)].max()
     # energy.T shape of (num_days, 24)
-    candidate_1day_before = energy.T[str(datetime_date - timedelta_1day - timedelta_14days) : str(datetime_date - timedelta_1day + timedelta_14days)].max()
-    candidate_1day_after = energy.T[str(datetime_date + timedelta_1day - timedelta_14days) : str(datetime_date + timedelta_1day + timedelta_14days)].max()
-
+    candidate_1day_before = energy.T[str(datetime_date - timedelta_1day - timedelta_14days):
+                                     str(datetime_date - timedelta_1day + timedelta_14days)].max()
+    candidate_1day_after = energy.T[str(datetime_date + timedelta_1day - timedelta_14days):
+                                    str(datetime_date + timedelta_1day + timedelta_14days)].max()
     # maximum for 30 minutes before and after
     denominator = []
-    T = intervals -1 
-    T_minus1 = T - 1 
+    T = intervals -1
+    T_minus1 = T - 1
     for time in range(intervals):
         if time == 0:
             max_val = max([candidate_1day_before[T], candidate[0], candidate[1]])
@@ -144,7 +145,7 @@ def get_weekdays(target_days):
     return weekdays
 
 
-def get_am_pm(features):    
+def get_am_pm(features):
     am_pm = []
     morning = [6, 7, 8, 9, 10]
     lunch = [11, 12, 13, 14, 15, 16]
@@ -163,7 +164,7 @@ def get_am_pm(features):
     return features
 
 
-def create_features(energy, col):
+def create_features(energy):
     means = []
     maxs = []
     mins = []

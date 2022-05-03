@@ -89,7 +89,7 @@ def train_timeseries_net(model, criterion, optimizer, train_loader,
         test_y = test_y.reshape(-1)
         test_loss = criterion(pred_y, test_y)
         test_losses.append(test_loss.item())
-        
+
         # early stopping
         early_stopping(test_loss, model)
         if early_stopping.early_stop:
@@ -161,7 +161,7 @@ class EarlyStopping:
         self.val_loss_min = np.Inf
         self.delta = delta
 
-    def __call__(self, val_loss, model):
+    def __call__(self, val_loss):
         score = -val_loss
         if self.best_score is None:
             self.best_score = score
@@ -172,5 +172,3 @@ class EarlyStopping:
         else:
             self.best_score = score
             self.counter = 0
-
-
