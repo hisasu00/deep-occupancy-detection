@@ -174,18 +174,13 @@ def create_features(energy, col):
     min_list=[]
     std_list=[]
     range_list=[]
-    temp_list=[]
     time_list=[]
-    
-    # basic statistics features
+
     for t in range(0, len(energy), 2):
         mean_list.append(np.mean(energy[t:t+2]))
         max_list.append(np.max(energy[t:t+2]))
         min_list.append(np.min(energy[t:t+2]))
         std_list.append(np.std(energy[t:t+2]))
         range_list.append(abs(energy[t+1] - energy[t]))
-    
-    # time features
-    time_list=[t for t in range(6,22,1)] * len(col)
-    
-    return mean_list, max_list, min_list, std_list, range_list, time_list
+
+    return mean_list, max_list, min_list, std_list, range_list
