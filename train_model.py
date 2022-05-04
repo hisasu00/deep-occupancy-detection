@@ -91,7 +91,7 @@ def train_timeseries_net(model, criterion, optimizer, train_loader,
         test_losses.append(test_loss.item())
 
         # early stopping
-        early_stopping(test_loss, model)
+        early_stopping(test_loss)
         if early_stopping.early_stop:
             break
 
