@@ -18,7 +18,6 @@ def get_month_energy(house_id, year, month):
         except FileNotFoundError:
             print(f"{date_string}:FileNotFoundError")
             print("skip this date")
-            pass
     return pd.DataFrame(month_energy)
 
 
