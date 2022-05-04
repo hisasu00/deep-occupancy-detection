@@ -46,7 +46,7 @@ class RNN(nn.Module):
 
 
 class AttentionRNN(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers,
+    def __init__(self, *, input_size, hidden_size, num_layers,
                  num_classes, dropout_ratio=0.5, is_bidirectional=True):
         super().__init__()
 
