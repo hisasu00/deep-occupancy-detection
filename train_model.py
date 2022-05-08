@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
+
 
 def train_net(model, criterion, optimizer, num_epochs, train_loader, test_x, test_y, device):
 
@@ -48,12 +50,14 @@ def train_net(model, criterion, optimizer, num_epochs, train_loader, test_x, tes
     return model
 
 
-def train_timeseries_net(model, criterion, optimizer, num_epochs,
-                         train_loader, test_x, test_y, device):
+def train_timeseries_net(*, model, criterion, optimizer, train_loader,
+                         test_x, test_y, device, patience, num_epochs=50):
     train_losses = []
     test_losses = []
+    early_stopping = EarlyStopping(patience=patience)
 
     for _ in range(num_epochs):
+        model.train()
         runnning_loss = 0.0
         idx = None
         for idx, (batch_x, batch_y) in enumerate(train_loader):
@@ -79,11 +83,17 @@ def train_timeseries_net(model, criterion, optimizer, num_epochs,
         train_losses.append(runnning_loss / idx)
 
         # add test loss
+        model.eval()
         pred_y = model(test_x, device)
         pred_y = torch.sigmoid(pred_y.reshape(-1))
         test_y = test_y.reshape(-1)
         test_loss = criterion(pred_y, test_y)
         test_losses.append(test_loss.item())
+
+        # early stopping
+        early_stopping(test_loss)
+        if early_stopping.early_stop:
+            break
 
     # plot loss curve
     plt.plot(train_losses, label="train", alpha=0.5, c="r")
@@ -139,3 +149,26 @@ def train_seq2seq_net(model, criterion, optimizer,
     # save state_dict
     torch.save(model.state_dict(), "./seq2seq.pth")
     return model
+
+
+class EarlyStopping:
+
+    def __init__(self, patience=7, delta=0):
+        self.patience = patience
+        self.counter = 0
+        self.best_score = None
+        self.early_stop = False
+        self.val_loss_min = np.Inf
+        self.delta = delta
+
+    def __call__(self, val_loss):
+        score = -val_loss
+        if self.best_score is None:
+            self.best_score = score
+        elif score < self.best_score + self.delta:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            self.best_score = score
+            self.counter = 0

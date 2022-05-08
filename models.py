@@ -46,15 +46,20 @@ class RNN(nn.Module):
 
 
 class AttentionRNN(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes, dropout_ratio):
+    # pylint: disable=too-many-instance-attributes
+    # Eleven seems reasonable in this case.
+    def __init__(self, *, input_size, hidden_size, num_layers,
+                 num_classes, dropout_ratio=0.5, is_bidirectional=True):
         super().__init__()
 
         self.hidden_size = hidden_size
         self.num_layers = num_layers
-        self.rnn = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.num_directional = 2 if is_bidirectional else 1
+        self.rnn = nn.LSTM(input_size, hidden_size, num_layers,
+                           batch_first=True, bidirectional=is_bidirectional)
 
         self.dropout1 = nn.Dropout(dropout_ratio)
-        self.fc1 = nn.Linear(2 * hidden_size, 50)
+        self.fc1 = nn.Linear(2 * self.num_directional * hidden_size, 50)
         self.bn1 = nn.BatchNorm1d(50)
 
         self.dropout2 = nn.Dropout(dropout_ratio)
@@ -64,8 +69,10 @@ class AttentionRNN(nn.Module):
         self.fc4 = nn.Linear(10, num_classes)
 
     def forward(self, x, device):
-        h0 = torch.zeros(self.num_layers, x.shape[0], self.hidden_size).to(device)
-        c0 = torch.zeros(self.num_layers, x.shape[0], self.hidden_size).to(device)
+        h0 = torch.zeros(self.num_directional * self.num_layers,
+                         x.shape[0], self.hidden_size).to(device)
+        c0 = torch.zeros(self.num_directional * self.num_layers,
+                         x.shape[0], self.hidden_size).to(device)
         hs, _ = self.rnn(x, (h0,c0))
 
         contexts = get_contexts_by_selfattention(hs, device)
