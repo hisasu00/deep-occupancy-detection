@@ -1,6 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from ray import tune
 import torch
+from torch import nn
+from torch import optim
+
+from models import AttentionRNN
 
 
 def train_net(model, criterion, optimizer, num_epochs, train_loader, test_x, test_y, device):
@@ -172,3 +177,60 @@ class EarlyStopping:
         else:
             self.best_score = score
             self.counter = 0
+
+
+def raytune_pipeline(config, options):
+
+    # 1. assign data and some variables from options
+    train_loader, val_x, val_y = options["dataset"].values()
+    input_size, num_layers, num_classes = options["params"].values()
+    num_epochs = options["num_epochs"]
+    device = options["device"]
+
+    # 2. instantiate model, criterion, optimizer
+    model = AttentionRNN(input_size=input_size, hidden_size=config["hidden_size"],
+                         num_layers=num_layers, num_classes=num_classes,
+                         fc_sizes=[config["fc_size_0"], config["fc_size_1"], config["fc_size_2"]]).to(device)
+    criterion = nn.BCELoss()
+    optimizer = optim.Adam(model.parameters(), lr=config["lr"],
+                           weight_decay=config["weight_decay"], eps=config["eps"])
+    early_stopping = EarlyStopping(patience=10)
+
+    # 3. training loop
+    for epoch in range(num_epochs):
+        model.train()
+
+        for _, (batch_x, batch_y) in enumerate(train_loader):
+            batch_x = batch_x.to(device)
+            batch_y = batch_y.to(device)
+
+            # 3.1 forward
+            score_y = model(batch_x, device)
+            score_y = torch.sigmoid(score_y.reshape(-1))
+            batch_y = batch_y.reshape(-1)
+            loss = criterion(score_y, batch_y)
+
+            # 3.2 backward
+            optimizer.zero_grad()
+            loss.backward()
+
+            # 3.3 update params
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
+            optimizer.step()
+
+        # 3.4 add test loss
+        model.eval()
+        pred_y = model(val_x, device)
+        pred_y = torch.sigmoid(pred_y.reshape(-1))
+        val_y = val_y.reshape(-1)
+        test_loss = criterion(pred_y, val_y)
+        tune.report(mean_loss=test_loss.item())
+        
+        # 3.5 save model's state_dict
+        if epoch&5 == 0:
+            torch.save(model.state_dict(), "./rnn.pth")
+
+        # 3.6 early stopping
+        early_stopping(test_loss.item())
+        if early_stopping.early_stop:
+            break

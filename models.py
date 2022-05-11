@@ -48,8 +48,9 @@ class RNN(nn.Module):
 class AttentionRNN(nn.Module):
     # pylint: disable=too-many-instance-attributes
     # Eleven seems reasonable in this case.
-    def __init__(self, *, input_size, hidden_size, num_layers,
-                 num_classes, dropout_ratio=0.5, is_bidirectional=True):
+    def __init__(self, *, input_size, hidden_size,
+                 num_layers, num_classes, fc_sizes=[50, 25, 10],
+                 dropout_ratio=0.5, is_bidirectional=True):
         super().__init__()
 
         self.hidden_size = hidden_size
@@ -59,14 +60,14 @@ class AttentionRNN(nn.Module):
                            batch_first=True, bidirectional=is_bidirectional)
 
         self.dropout1 = nn.Dropout(dropout_ratio)
-        self.fc1 = nn.Linear(2 * self.num_directional * hidden_size, 50)
-        self.bn1 = nn.BatchNorm1d(50)
+        self.fc1 = nn.Linear(2 * self.num_directional * hidden_size, fc_sizes[0])
+        self.bn1 = nn.BatchNorm1d(fc_sizes[0])
 
         self.dropout2 = nn.Dropout(dropout_ratio)
-        self.fc2 = nn.Linear(50, 25)
+        self.fc2 = nn.Linear(fc_sizes[0], fc_sizes[1])
 
-        self.fc3 = nn.Linear(25, 10)
-        self.fc4 = nn.Linear(10, num_classes)
+        self.fc3 = nn.Linear(fc_sizes[1], fc_sizes[2])
+        self.fc4 = nn.Linear(fc_sizes[2], num_classes)
 
     def forward(self, x, device):
         h0 = torch.zeros(self.num_directional * self.num_layers,
