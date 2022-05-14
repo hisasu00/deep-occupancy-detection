@@ -54,7 +54,7 @@ def train_net(model, criterion, optimizer, num_epochs, train_loader, test_x, tes
 
     return model
 
-
+"""
 def train_timeseries_net(*, model, criterion, optimizer, train_loader,
                          test_x, test_y, device, patience, num_epochs=50):
     train_losses = []
@@ -112,7 +112,7 @@ def train_timeseries_net(*, model, criterion, optimizer, train_loader,
     # save state_dict
     torch.save(model.state_dict(), "./rnn.pth")
     return model
-
+"""
 
 def train_seq2seq_net(model, criterion, optimizer,
                       num_epochs, train_loader, device):
@@ -179,7 +179,7 @@ class EarlyStopping:
             self.counter = 0
 
 
-def raytune_pipeline(config, options):
+def train_timeseries_net(config, options):
 
     # 1. assign data and some variables from options
     train_loader, val_x, val_y = options["dataset"].values()
@@ -224,7 +224,7 @@ def raytune_pipeline(config, options):
         pred_y = torch.sigmoid(pred_y.reshape(-1))
         val_y = val_y.reshape(-1)
         test_loss = criterion(pred_y, val_y)
-        tune.report(mean_loss=test_loss.item())
+        tune.report(loss=test_loss.item())
         
         # 3.5 save model's state_dict
         if epoch&5 == 0:
