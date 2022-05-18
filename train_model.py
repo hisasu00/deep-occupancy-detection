@@ -194,7 +194,6 @@ def train_timeseries_net(config, options):
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=config["lr"],
                            weight_decay=config["weight_decay"], eps=config["eps"])
-    early_stopping = EarlyStopping(patience=10)
 
     # 3. training loop
     for epoch in range(num_epochs):
@@ -229,8 +228,3 @@ def train_timeseries_net(config, options):
         # 3.5 save model's state_dict
         if epoch&5 == 0:
             torch.save(model.state_dict(), "./rnn.pth")
-
-        # 3.6 early stopping
-        early_stopping(test_loss.item())
-        if early_stopping.early_stop:
-            break
