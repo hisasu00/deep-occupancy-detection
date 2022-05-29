@@ -155,12 +155,16 @@ class Decoder(nn.Module):
             output = output.reshape(start_x.shape[0], start_x.shape[1], output.shape[1])
             output = self.fc(output)
             predict = output.argmax(axis=2)
-
+            
+            # TODO: verify teature forcing is really needed
+            """
             if t+1 == target_len:
                 pass
             else:
                 start_x = x[:, t+1, :] if random.random() < 0.5 else predict
-
+            """
+            start_x = predict
+                
             output = output.squeeze(1)
             scores[:, t, :] = output
         return scores
