@@ -109,11 +109,13 @@ def train_timeseries_net(*, model, criterion, optimizer, train_loader,
     return model
 
 
-def train_seq2seq_net(model, criterion, optimizer,
-                      num_epochs, train_loader, device):
+def train_seq2seq_net(model, criterion, optimizer, num_epochs,
+                      train_loader, test_x, test_y, device):
     train_losses = []
+    test_losses = []
 
     for _ in range(num_epochs):
+        model.train()
         runnning_loss = 0.0
         idx = None
         for idx, (batch_x, batch_y) in enumerate(train_loader):
@@ -138,8 +140,19 @@ def train_seq2seq_net(model, criterion, optimizer,
             runnning_loss += loss.item()
         train_losses.append(runnning_loss / idx)
 
+        # add test loss
+        model.eval()
+        decoder_y = test_y[:, :-1, :]
+        decoder_t = test_y[:, 1:, :]
+        decoder_t = decoder_t.reshape(-1)
+        decoder_t = torch.tensor(decoder_t, dtype=torch.long)
+        scores = model.generate(test_x, decoder_y, decoder_y.shape[1], device)
+        test_loss = criterion(scores.reshape(-1, 2), decoder_t)
+        test_losses.append(test_loss.item())
+
     # plot loss curve
     plt.plot(train_losses, label="train", alpha=0.5, c="r")
+    plt.plot(test_losses, label="test", alpha=0.5, c="b")
     plt.ylim(0.2, 1.0)
     plt.xlabel("epoch")
     plt.ylabel("loss")
