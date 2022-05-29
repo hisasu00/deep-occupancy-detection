@@ -102,7 +102,7 @@ def get_contexts_by_selfattention(hs, device):
         attention = attention.unsqueeze(2)
         attention = attention.repeat(1, 1, H)
         context = (attention*hs).sum(axis=1)
-        contexts[:, t, :] = context
+        contexts[:, t, :] = context / torch.sqrt(torch.tensor(H, dtype=torch.float32))
     return contexts
 
 
