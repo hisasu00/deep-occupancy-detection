@@ -5,6 +5,7 @@ import pickle
 from ray import tune
 from ray.tune.suggest.hyperopt import HyperOptSearch
 from ray.tune.schedulers import ASHAScheduler
+from ray.tune.integration.wandb import WandbLogger
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import preprocessing
 from sklearn.pipeline import make_pipeline
@@ -27,15 +28,16 @@ def pipeline_rnn(dataset, options, config, trainer=train_timeseries_net):
     hyperopt = HyperOptSearch(metric="loss", mode="min")
     scheduler = ASHAScheduler(
         metric='loss', mode='min', max_t=1000,
-        grace_period=5, reduction_factor=2)
+        grace_period=12, reduction_factor=2)
 
     analysis = tune.run(
         partial(trainer, options=options),
         config=config,
-        num_samples=100,
+        num_samples=2,
         search_alg=hyperopt,
         resources_per_trial={'cpu':4, 'gpu':1},
-        scheduler=scheduler
+        scheduler=scheduler,
+        loggers=[WandbLogger]
     )
 
     # test
@@ -137,7 +139,7 @@ def pipeline_benchmarks(dataset, config, options, trainer, name):
     analysis = tune.run(
         partial(trainer, options=options),
         config=config,
-        num_samples=100,
+        num_samples=2,
         search_alg=hyperopt,
         resources_per_trial={'cpu':4, 'gpu':1}
     )   
@@ -236,6 +238,10 @@ if __name__ == "__main__":
         "fc_size_0": tune.choice([50, 75, 100]),
         "fc_size_1": tune.choice([15, 25, 35]),
         "fc_size_2": tune.choice([5, 10, 20]),
+        "wandb": {
+            "project": "test",
+            "api_key_file": "./wandb_api_key.txt"
+        }
     }
 
     rf_config = {
@@ -267,9 +273,9 @@ if __name__ == "__main__":
     }
 
     # Raytune
-    n_splits = 10
+    n_splits = 2
     val_size = 0.1
-    num_repeats = 10
+    num_repeats = 1
 
     accs = []
     rf_accs = []
