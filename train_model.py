@@ -143,9 +143,8 @@ def train_seq2seq_net(model, criterion, optimizer, num_epochs,
         # add test loss
         model.eval()
         decoder_y = test_y[:, :-1, :]
-        decoder_t = test_y[:, 1:, :]
+        decoder_t = test_y[:, 1:, :].to(torch.long)
         decoder_t = decoder_t.reshape(-1)
-        decoder_t = torch.tensor(decoder_t, dtype=torch.long)
         scores = model.generate(test_x, decoder_y, decoder_y.shape[1], device)
         test_loss = criterion(scores.reshape(-1, 2), decoder_t)
         test_losses.append(test_loss.item())
