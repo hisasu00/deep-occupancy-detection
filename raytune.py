@@ -217,6 +217,10 @@ if __name__ == "__main__":
     from sklearn.model_selection import train_test_split, KFold
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
+    # Get Date
+    start_date = datetime.datetime.now()
+    start_date = start_date.strftime('%Y-%m-%d-%H-%M-%S')
+    
     # Load Data
     x = pd.read_csv("./data/2_X_train.csv").values
     y = pd.read_csv("./data/2_Y_train.csv").values.reshape(-1)
@@ -239,7 +243,7 @@ if __name__ == "__main__":
         "fc_size_1": tune.choice([15, 25, 35]),
         "fc_size_2": tune.choice([5, 10, 20]),
         "wandb": {
-            "project": "test",
+            "project": f"project_{start_date}",
             "api_key_file": "./wandb_api_key.txt"
         }
     }
@@ -316,11 +320,10 @@ if __name__ == "__main__":
         rbf_accs.append(rbf_mean_acc)
     
     # Logging
-    date = datetime.datetime.now()
-    date = date.strftime('%Y-%m-%d-%H-%M-%S')
-
-    with open(f'log_{date}.txt', 'w') as f:
-        print(f"date: {date}", file=f)
+    end_date = datetime.datetime.now()
+    end_date = end_date.strftime('%Y-%m-%d-%H-%M-%S')
+    with open(f'log_{end_date}.txt', 'w') as f:
+        print(f"date: {end_date}", file=f)
         print(f"BiLSTM-Attention:{np.mean(accs)}({np.std(accs)})", file=f)
         print(f"RF:{np.mean(rf_accs)}({np.std(accs)})", file=f)
         print(f"Linear-SVM:{np.mean(linear_accs)}({np.std(accs)})", file=f)
