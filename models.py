@@ -108,35 +108,49 @@ def get_contexts_by_selfattention(hs, device):
 class Encoder(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, dropout_ratio):
         super().__init__()
+        self.fc1 = nn.Linear(input_size, input_size)
         self.lstm = nn.LSTM(input_size, hidden_size,
                             num_layers, batch_first=True)
         self.bn1 = nn.BatchNorm1d(hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.dropout = nn.Dropout(dropout_ratio)
 
     def forward(self, x):
-        encoder_hs, (h_t, c_t)  = self.lstm(x)
-        encoder_hs = encoder_hs.reshape(x.shape[0], encoder_hs.shape[2], x.shape[1])
-        encoder_hs = self.bn1(encoder_hs)
-        encoder_hs = encoder_hs.reshape(x.shape[0], x.shape[1], encoder_hs.shape[1])
-        return encoder_hs, h_t, c_t
+        outputs = self.fc1(x)
+        outputs, (h_t, c_t)  = self.lstm(outputs)
+        outputs = outputs.reshape(x.shape[0], outputs.shape[2], x.shape[1])
+        outputs = self.bn1(outputs)
+        outputs = outputs.reshape(x.shape[0], x.shape[1], outputs.shape[1])
+        outputs = self.dropout(F.relu(self.fc2(outputs)))
+        return outputs, h_t, c_t
 
 
 class Decoder(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers, dropout_ratio):
         super().__init__()
-        self.rnn = nn.LSTM(input_size, hidden_size,
+        self.fc1 = nn.Linear(input_size, 10)
+        self.rnn = nn.LSTM(10, hidden_size,
                            num_layers, batch_first=True)
         self.bn1 = nn.BatchNorm1d(2 * hidden_size)
-        self.fc = nn.Linear(2 * hidden_size, output_size)
+
+        self.fc2 = nn.Linear(2 * hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, int(hidden_size/2))
+        self.fc4 = nn.Linear(int(hidden_size/2), output_size)
+        self.dropout = nn.Dropout(dropout_ratio)
 
     def forward(self, x, h_t, c_t, encoder_hs, device):
+        x = self.fc1(x)
         decoder_hs, (h_t, c_t) = self.rnn(x, (h_t, c_t))
+
         outputs = get_contexts_and_decoderhs_by_attention(encoder_hs, decoder_hs, device)
 
         outputs = outputs.reshape(x.shape[0], outputs.shape[2], x.shape[1])
         outputs = self.bn1(outputs)
         outputs = outputs.reshape(x.shape[0], x.shape[1], outputs.shape[1])
 
-        predictions = self.fc(outputs)
+        outputs = self.dropout(F.relu(self.fc2(outputs)))
+        outputs = self.fc3(outputs)
+        predictions = self.fc4(outputs)
         return predictions
 
     def generate(self, h_t, c_t, encoder_hs, x, target_len, device):
@@ -146,14 +160,19 @@ class Decoder(nn.Module):
         for t in range(target_len):
             start_x = start_x.unsqueeze(2)
             start_x = start_x.to(torch.float32)
-
+            
+            start_x = self.fc1(start_x)
             decoder_hs, (h_t, c_t) =  self.rnn(start_x, (h_t, c_t))
+
             output = get_contexts_and_decoderhs_by_attention(encoder_hs, decoder_hs, device)
 
             output = output.reshape(start_x.shape[0], output.shape[2], start_x.shape[1])
             output = self.bn1(output)
             output = output.reshape(start_x.shape[0], start_x.shape[1], output.shape[1])
-            output = self.fc(output)
+
+            output = self.dropout(F.relu(self.fc2(output)))
+            output = self.fc3(output)
+            output = F.softmax(self.fc4(output), dim=2)
             predict = output.argmax(axis=2)
             
             # TODO: verify teature forcing is really needed
