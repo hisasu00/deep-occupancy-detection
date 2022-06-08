@@ -219,11 +219,12 @@ def train_timeseries_net(config, options):
 
         # 3.4 add test loss
         model.eval()
-        pred_y = model(val_x, device)
-        pred_y = torch.sigmoid(pred_y.reshape(-1))
-        val_y = val_y.reshape(-1)
-        test_loss = criterion(pred_y, val_y)
-        tune.report(loss=test_loss.item())
+        with torch.no_grad():
+            pred_y = model(val_x, device)
+            pred_y = torch.sigmoid(pred_y.reshape(-1))
+            val_y = val_y.reshape(-1)
+            test_loss = criterion(pred_y, val_y)
+            tune.report(loss=test_loss.item())
         
         # 3.5 save model's state_dict
         if epoch&5 == 0:
