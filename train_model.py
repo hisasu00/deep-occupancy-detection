@@ -142,12 +142,13 @@ def train_seq2seq_net(model, criterion, optimizer, num_epochs,
 
         # add test loss
         model.eval()
-        decoder_y = test_y[:, :-1, :]
-        decoder_t = test_y[:, 1:, :].to(torch.long)
-        decoder_t = decoder_t.reshape(-1)
-        scores = model.generate(test_x, decoder_y, decoder_y.shape[1], device)
-        test_loss = criterion(scores.reshape(-1, 2), decoder_t)
-        test_losses.append(test_loss.item())
+        with torch.no_grad():
+            decoder_y = test_y[:, :-1, :]
+            decoder_t = test_y[:, 1:, :].to(torch.long)
+            decoder_t = decoder_t.reshape(-1)
+            scores = model.generate(test_x, decoder_y, decoder_y.shape[1], device)
+            test_loss = criterion(scores.reshape(-1, 2), decoder_t)
+            test_losses.append(test_loss.item())
 
     # plot loss curve
     plt.plot(train_losses, label="train", alpha=0.5, c="r")
