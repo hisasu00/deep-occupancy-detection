@@ -153,7 +153,6 @@ def train_seq2seq_net(model, criterion, optimizer, num_epochs,
     # plot loss curve
     plt.plot(train_losses, label="train", alpha=0.5, c="r")
     plt.plot(test_losses, label="test", alpha=0.5, c="b")
-    plt.ylim(0.2, 1.0)
     plt.xlabel("epoch")
     plt.ylabel("loss")
     plt.legend()
