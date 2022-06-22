@@ -28,12 +28,13 @@ def pipeline_rnn(dataset, options, config, trainer=train_timeseries_net):
     hyperopt = HyperOptSearch(metric="loss", mode="min")
     scheduler = ASHAScheduler(
         metric='loss', mode='min', max_t=1000,
-        grace_period=12, reduction_factor=2)
+        grace_period=12, reduction_factor=2
+    )
 
     analysis = tune.run(
         partial(trainer, options=options),
         config=config,
-        num_samples=2,
+        num_samples=150,
         search_alg=hyperopt,
         resources_per_trial={'cpu':4, 'gpu':1},
         scheduler=scheduler,
@@ -89,7 +90,7 @@ def preprocess_for_rnn(dataset, device):
     val_y = val_y.to(device)
 
     train_ds = TensorDataset(train_x, train_y)
-    train_loader = DataLoader(train_ds, batch_size=6, shuffle=True)
+    train_loader = DataLoader(train_ds, batch_size=4, shuffle=True)
     
     return train_loader, val_x, val_y, test_x, test_y
 
@@ -107,14 +108,15 @@ def standby_rnn_for_test(analysis, options):
 
 
 def test(model, test_x, test_y, device):
-    model.eval()
-    score_y = model(test_x, device).reshape(-1)
-    score_y = torch.sigmoid(score_y)
-    pred_y = torch.tensor([1 if i > 0.5 else 0 for i in score_y]).to(device)
-    test_y = test_y.reshape(-1)
-    test_y = test_y.to('cpu').detach().numpy().copy()
-    pred_y = pred_y.to('cpu').detach().numpy().copy()
-    acc = sum(pred_y == test_y) / int(test_y.shape[0])
+    with torch.no_grad():
+        model.eval()
+        score_y = model(test_x, device).reshape(-1)
+        score_y = torch.sigmoid(score_y)
+        pred_y = torch.tensor([1 if i > 0.5 else 0 for i in score_y]).to(device)
+        test_y = test_y.reshape(-1)
+        test_y = test_y.to('cpu').detach().numpy().copy()
+        pred_y = pred_y.to('cpu').detach().numpy().copy()
+        acc = sum(pred_y == test_y) / int(test_y.shape[0])
     return acc
 
 
@@ -222,8 +224,8 @@ if __name__ == "__main__":
     start_date = start_date.strftime('%Y-%m-%d-%H-%M-%S')
     
     # Load Data
-    x = pd.read_csv("./data/2_X_train.csv").values
-    y = pd.read_csv("./data/2_Y_train.csv").values.reshape(-1)
+    x = pd.read_csv("./data/1_X_train.csv").values
+    y = pd.read_csv("./data/1_Y_train.csv").values.reshape(-1)
 
     sequence_length = 16
     num_days = int(x.shape[0] / sequence_length)
@@ -235,13 +237,15 @@ if __name__ == "__main__":
     
     # Set Config and Options for Raytune
     rnn_config = {
-        "lr": tune.loguniform(1e-4, 1e-1),
+        "lr": tune.loguniform(1e-5, 1e-1),
         "hidden_size": tune.choice([25, 50, 100, 150]),
-        "weight_decay": tune.choice([0, 1e-7, 1e-5, 1e-3, 1e-1]),
+        "weight_decay": tune.choice([0, 1e-10, 1e-7, 1e-5, 1e-3]),
         "eps": tune.choice([1e-11, 1e-8, 1e-5, 1e-3, 1e-1]),
-        "fc_size_0": tune.choice([50, 75, 100]),
+        "fc_size_0": tune.choice([50, 75, 100, 125, 150]),
         "fc_size_1": tune.choice([15, 25, 35]),
         "fc_size_2": tune.choice([5, 10, 20]),
+        "patience": tune.choice([7, 10, 20, 50, 100, 200]),
+        "num_epochs": tune.choice([50, 100, 200]),
         "wandb": {
             "project": f"project_{start_date}",
             "api_key_file": "./wandb_api_key.txt"
@@ -266,7 +270,6 @@ if __name__ == "__main__":
 
     rnn_options = {
         'dataset': {'train_loader': None, 'val_x': None, 'val_y': None},
-        "num_epochs": 100,
         "params": {"input_size": 13, "num_layers": 1, "num_classes": 1},
         "device": device
     }
@@ -277,9 +280,9 @@ if __name__ == "__main__":
     }
 
     # Raytune
-    n_splits = 2
+    n_splits = 10
     val_size = 0.1
-    num_repeats = 1
+    num_repeats = 10
 
     accs = []
     rf_accs = []

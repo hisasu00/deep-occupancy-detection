@@ -184,7 +184,6 @@ def train_timeseries_net(config, options):
     # 1. assign data and some variables from options
     train_loader, val_x, val_y = options["dataset"].values()
     input_size, num_layers, num_classes = options["params"].values()
-    num_epochs = options["num_epochs"]
     device = options["device"]
 
     # 2. instantiate model, criterion, optimizer
@@ -194,9 +193,10 @@ def train_timeseries_net(config, options):
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=config["lr"],
                            weight_decay=config["weight_decay"], eps=config["eps"])
+    early_stopping = EarlyStopping(patience=config["patience"])
 
     # 3. training loop
-    for epoch in range(num_epochs):
+    for epoch in range(config["num_epochs"]):
         model.train()
 
         for _, (batch_x, batch_y) in enumerate(train_loader):
@@ -218,14 +218,19 @@ def train_timeseries_net(config, options):
             optimizer.step()
 
         # 3.4 add test loss
-        model.eval()
         with torch.no_grad():
+            model.eval()
             pred_y = model(val_x, device)
             pred_y = torch.sigmoid(pred_y.reshape(-1))
             val_y = val_y.reshape(-1)
             test_loss = criterion(pred_y, val_y)
             tune.report(loss=test_loss.item())
+            
+        # 3.5 early stopping
+        early_stopping(test_loss)
+        if early_stopping.early_stop:
+            break
         
-        # 3.5 save model's state_dict
-        if epoch&5 == 0:
+        # 3.6 save model's state_dict
+        if epoch&30 == 0:
             torch.save(model.state_dict(), "./rnn.pth")
