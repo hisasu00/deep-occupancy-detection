@@ -34,7 +34,7 @@ def pipeline_rnn(dataset, options, config, trainer=train_timeseries_net):
     analysis = tune.run(
         partial(trainer, options=options),
         config=config,
-        num_samples=150,
+        num_samples=50,
         search_alg=hyperopt,
         resources_per_trial={'cpu':4, 'gpu':1},
         scheduler=scheduler,
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     
     # Set Config and Options for Raytune
     rnn_config = {
-        "lr": tune.loguniform(1e-5, 1e-1),
+        "lr": tune.loguniform(1e-4, 1e-1),
         "hidden_size": tune.choice([25, 50, 100, 150]),
         "weight_decay": tune.choice([0, 1e-10, 1e-7, 1e-5, 1e-3]),
         "eps": tune.choice([1e-11, 1e-8, 1e-5, 1e-3, 1e-1]),
@@ -328,6 +328,6 @@ if __name__ == "__main__":
     with open(f'log_{end_date}.txt', 'w') as f:
         print(f"date: {end_date}", file=f)
         print(f"BiLSTM-Attention:{np.mean(accs)}({np.std(accs)})", file=f)
-        print(f"RF:{np.mean(rf_accs)}({np.std(accs)})", file=f)
-        print(f"Linear-SVM:{np.mean(linear_accs)}({np.std(accs)})", file=f)
-        print(f"Rbf-SVM:{np.mean(rbf_accs)}({np.std(accs)})", file=f)
+        print(f"RF:{np.mean(rf_accs)}({np.std(rf_accs)})", file=f)
+        print(f"Linear-SVM:{np.mean(linear_accs)}({np.std(linear_accs)})", file=f)
+        print(f"Rbf-SVM:{np.mean(rbf_accs)}({np.std(rbf_accs)})", file=f)
