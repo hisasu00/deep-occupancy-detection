@@ -232,5 +232,6 @@ def train_timeseries_net(config, options):
             break
         
         # 3.6 save model's state_dict
-        if epoch&30 == 0:
+        save_point = 5 if config["num_epochs"] <= 100 else 10
+        if epoch&save_point == 0:
             torch.save(model.state_dict(), "./rnn.pth")
