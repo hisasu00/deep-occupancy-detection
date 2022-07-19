@@ -33,7 +33,7 @@ def pipeline_rnn(dataset, options, config, trainer=train_timeseries_net):
     analysis = tune.run(
         partial(trainer, options=options),
         config=config,
-        num_samples=2,
+        num_samples=50,
         search_alg=hyperopt,
         resources_per_trial={'cpu':4, 'gpu':1},
         scheduler=scheduler,
@@ -107,14 +107,15 @@ def standby_rnn_for_test(analysis, options):
 
 
 def test(model, test_x, test_y, device):
-    model.eval()
-    score_y = model(test_x, device).reshape(-1)
-    score_y = torch.sigmoid(score_y)
-    pred_y = torch.tensor([1 if i > 0.5 else 0 for i in score_y]).to(device)
-    test_y = test_y.reshape(-1)
-    test_y = test_y.to('cpu').detach().numpy().copy()
-    pred_y = pred_y.to('cpu').detach().numpy().copy()
-    acc = sum(pred_y == test_y) / int(test_y.shape[0])
+    with torch.no_grad():
+        model.eval()
+        score_y = model(test_x, device).reshape(-1)
+        score_y = torch.sigmoid(score_y)
+        pred_y = torch.tensor([1 if i > 0.5 else 0 for i in score_y]).to(device)
+        test_y = test_y.reshape(-1)
+        test_y = test_y.to('cpu').detach().numpy().copy()
+        pred_y = pred_y.to('cpu').detach().numpy().copy()
+        acc = sum(pred_y == test_y) / int(test_y.shape[0])
     return acc
 
 
@@ -277,9 +278,9 @@ if __name__ == "__main__":
     }
 
     # Raytune
-    n_splits = 2
+    n_splits = 10
     val_size = 0.1
-    num_repeats = 1
+    num_repeats = 10
 
     accs = []
     rf_accs = []
@@ -325,6 +326,6 @@ if __name__ == "__main__":
     with open(f'log_{end_date}.txt', 'w') as f:
         print(f"date: {end_date}", file=f)
         print(f"BiLSTM-Attention:{np.mean(accs)}({np.std(accs)})", file=f)
-        print(f"RF:{np.mean(rf_accs)}({np.std(accs)})", file=f)
-        print(f"Linear-SVM:{np.mean(linear_accs)}({np.std(accs)})", file=f)
-        print(f"Rbf-SVM:{np.mean(rbf_accs)}({np.std(accs)})", file=f)
+        print(f"RF:{np.mean(rf_accs)}({np.std(rf_accs)})", file=f)
+        print(f"Linear-SVM:{np.mean(linear_accs)}({np.std(linear_accs)})", file=f)
+        print(f"Rbf-SVM:{np.mean(rbf_accs)}({np.std(rbf_accs)})", file=f)
