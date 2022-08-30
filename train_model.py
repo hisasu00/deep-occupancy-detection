@@ -209,14 +209,15 @@ def train_timeseries_net(config, options):
 
     # 1. assign data and some variables from options
     train_loader, val_x, val_y = options["dataset"].values()
-    input_size, num_layers, num_classes = options["params"].values()
+    input_size, num_classes = options["params"].values()
     num_epochs = options["num_epochs"]
     device = options["device"]
 
     # 2. instantiate model, criterion, optimizer
     model = AttentionRNN(input_size=input_size, hidden_size=config["hidden_size"],
-                         num_layers=num_layers, num_classes=num_classes,
-                         fc_sizes=[config["fc_size_0"], config["fc_size_1"], config["fc_size_2"]]).to(device)
+                         num_layers=config["num_layers"], num_classes=num_classes,
+                         fc_sizes=[config["fc_size_0"], config["fc_size_1"], config["fc_size_2"]],
+                         proj_size=config["proj_size"]).to(device)
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=config["lr"],
                            weight_decay=config["weight_decay"], eps=config["eps"])

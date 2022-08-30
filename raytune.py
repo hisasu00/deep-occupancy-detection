@@ -243,6 +243,8 @@ if __name__ == "__main__":
         "fc_size_0": tune.choice([50, 75, 100]),
         "fc_size_1": tune.choice([15, 25, 35]),
         "fc_size_2": tune.choice([5, 10, 20]),
+        "num_layers": tune.randint(1, 10),
+        "proj_size": tune.randint(0, 18),
         "wandb": {
             "project": f"project_{start_date}",
             "api_key_file": "./wandb_api_key.txt"
@@ -268,7 +270,7 @@ if __name__ == "__main__":
     rnn_options = {
         'dataset': {'train_loader': None, 'val_x': None, 'val_y': None},
         "num_epochs": 100,
-        "params": {"input_size": 13, "num_layers": 1, "num_classes": 1},
+        "params": {"input_size": 13, "num_classes": 1},
         "device": device
     }
 
