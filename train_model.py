@@ -216,8 +216,7 @@ def train_timeseries_net(config, options):
     # 2. instantiate model, criterion, optimizer
     model = AttentionRNN(input_size=input_size, hidden_size=config["hidden_size"],
                          num_layers=config["num_layers"], num_classes=num_classes,
-                         fc_sizes=[config["fc_size_0"], config["fc_size_1"], config["fc_size_2"]],
-                         proj_size=config["proj_size"]).to(device)
+                         fc_sizes=[config["fc_size_0"], config["fc_size_1"], config["fc_size_2"]]).to(device)
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=config["lr"],
                            weight_decay=config["weight_decay"], eps=config["eps"])
