@@ -11,7 +11,6 @@ from sklearn import preprocessing
 from sklearn.pipeline import make_pipeline
 from sklearn.svm import SVC
 import torch
-from torch.utils.data import TensorDataset, DataLoader
 
 from models import AttentionRNN
 from train_model import train_timeseries_net
@@ -19,8 +18,9 @@ from train_model import train_timeseries_net
 
 def pipeline_rnn(dataset, options, config, trainer=train_timeseries_net):
     # preprocessing
-    train_loader, val_x, val_y, test_x, test_y = preprocess_for_rnn(dataset, options["device"])
-    options["dataset"]["train_loader"] = train_loader
+    train_x, train_y, val_x, val_y, test_x, test_y = preprocess_for_rnn(dataset, options["device"])
+    options["dataset"]["train_x"] = train_x
+    options["dataset"]["train_y"] = train_y
     options["dataset"]["val_x"] = val_x
     options["dataset"]["val_y"] = val_y
     
@@ -87,11 +87,8 @@ def preprocess_for_rnn(dataset, device):
     test_y = test_y.to(device)
     val_x = val_x.to(device)
     val_y = val_y.to(device)
-
-    train_ds = TensorDataset(train_x, train_y)
-    train_loader = DataLoader(train_ds, batch_size=6, shuffle=True)
     
-    return train_loader, val_x, val_y, test_x, test_y
+    return train_x, train_y, val_x, val_y, test_x, test_y
 
 
 def standby_rnn_for_test(analysis, options):
@@ -246,6 +243,7 @@ if __name__ == "__main__":
         "num_layers": tune.randint(1, 10),
         "dropout_ratio_0": tune.uniform(0, 0.99),
         "dropout_ratio_1": tune.uniform(0, 0.99),
+        "batch_size": tune.randint(2, 17),
         "wandb": {
             "project": f"project_{start_date}",
             "api_key_file": "./wandb_api_key.txt"
@@ -269,7 +267,10 @@ if __name__ == "__main__":
     }
 
     rnn_options = {
-        'dataset': {'train_loader': None, 'val_x': None, 'val_y': None},
+        'dataset': {
+            'train_x': None, 'train_y': None,
+            'val_x': None, 'val_y': None
+            },
         "num_epochs": 100,
         "params": {"input_size": 13, "num_classes": 1},
         "device": device

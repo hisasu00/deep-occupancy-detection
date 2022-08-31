@@ -4,6 +4,7 @@ from ray import tune
 import torch
 from torch import nn
 from torch import optim
+from torch.utils.data import TensorDataset, DataLoader
 
 from models import AttentionRNN
 
@@ -207,8 +208,11 @@ class EarlyStopping:
 
 def train_timeseries_net(config, options):
 
-    # 1. assign data and some variables from options
-    train_loader, val_x, val_y = options["dataset"].values()
+    # 1. assign some variables from options, instantiate DataLoader
+    train_x, train_y, val_x, val_y = options["dataset"].values()
+    train_ds = TensorDataset(train_x, train_y)
+    train_loader = DataLoader(train_ds, batch_size=config["batch_size"], shuffle=True)
+
     input_size, num_classes = options["params"].values()
     num_epochs = options["num_epochs"]
     device = options["device"]
