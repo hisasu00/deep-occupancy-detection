@@ -97,8 +97,9 @@ def standby_rnn_for_test(analysis, options):
     state_dict = torch.load(os.path.join(logdir, "rnn.pth"))
 
     model = AttentionRNN(input_size=options["params"]["input_size"], hidden_size=best["hidden_size"],
-                         num_layers=options["params"]["num_layers"], num_classes=options["params"]["num_classes"],
-                         fc_sizes=[best["fc_size_0"], best["fc_size_1"], best["fc_size_2"]]).to(options["device"])
+                         num_layers=best["num_layers"], num_classes=options["params"]["num_classes"],
+                         fc_sizes=[best["fc_size_0"], best["fc_size_1"], best["fc_size_2"]],
+                         dropout_ratios=[best["dropout_ratio_0"], best["dropout_ratio_1"]]).to(options["device"])
     model.load_state_dict(state_dict)
     return model
 
