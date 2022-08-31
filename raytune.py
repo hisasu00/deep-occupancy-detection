@@ -234,12 +234,12 @@ if __name__ == "__main__":
     # Set Config and Options for Raytune
     rnn_config = {
         "lr": tune.loguniform(1e-4, 1e-1),
-        "hidden_size": tune.choice([25, 50, 100, 150]),
-        "weight_decay": tune.choice([0, 1e-7, 1e-5, 1e-3, 1e-1]),
-        "eps": tune.choice([1e-11, 1e-8, 1e-5, 1e-3, 1e-1]),
-        "fc_size_0": tune.choice([50, 75, 100]),
-        "fc_size_1": tune.choice([15, 25, 35]),
-        "fc_size_2": tune.choice([5, 10, 20]),
+        "hidden_size": tune.randint(10, 500),
+        "weight_decay": tune.loguniform(1e-10, 1e-1),
+        "eps": tune.loguniform(1e-10, 1e-1),
+        "fc_size_0": tune.randint(5, 500),
+        "fc_size_1": tune.randint(5, 500),
+        "fc_size_2": tune.randint(5, 500),
         "num_layers": tune.randint(1, 10),
         "dropout_ratio_0": tune.uniform(0, 0.99),
         "dropout_ratio_1": tune.uniform(0, 0.99),
