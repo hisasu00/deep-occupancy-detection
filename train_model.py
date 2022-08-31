@@ -257,5 +257,6 @@ def train_timeseries_net(config, options):
             tune.report(loss=test_loss.item())
         
         # 3.5 save model's state_dict
-        if epoch&5 == 0:
+        save_freq = 2 if config["num_epochs"] < 70 else 5
+        if epoch&save_freq == 0:
             torch.save(model.state_dict(), "./rnn.pth")
