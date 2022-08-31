@@ -50,7 +50,7 @@ class AttentionRNN(nn.Module):
     # Eleven seems reasonable in this case.
     def __init__(self, *, input_size, hidden_size,
                  num_layers, num_classes, fc_sizes=[50, 25, 10],
-                 dropout_ratio=0.5, is_bidirectional=True):
+                 dropout_ratios=[0.5, 0.5], is_bidirectional=True):
         super().__init__()
 
         self.hidden_size = hidden_size
@@ -59,11 +59,11 @@ class AttentionRNN(nn.Module):
         self.rnn = nn.LSTM(input_size, hidden_size, num_layers,
                            batch_first=True, bidirectional=is_bidirectional)
 
-        self.dropout1 = nn.Dropout(dropout_ratio)
+        self.dropout1 = nn.Dropout(dropout_ratios[0])
         self.fc1 = nn.Linear(2 * self.num_directional * hidden_size, fc_sizes[0])
         self.bn1 = nn.BatchNorm1d(fc_sizes[0])
 
-        self.dropout2 = nn.Dropout(dropout_ratio)
+        self.dropout2 = nn.Dropout(dropout_ratios[1])
         self.fc2 = nn.Linear(fc_sizes[0], fc_sizes[1])
 
         self.fc3 = nn.Linear(fc_sizes[1], fc_sizes[2])

@@ -244,6 +244,8 @@ if __name__ == "__main__":
         "fc_size_1": tune.choice([15, 25, 35]),
         "fc_size_2": tune.choice([5, 10, 20]),
         "num_layers": tune.randint(1, 10),
+        "dropout_ratio_0": tune.uniform(0, 0.99),
+        "dropout_ratio_1": tune.uniform(0, 0.99),
         "wandb": {
             "project": f"project_{start_date}",
             "api_key_file": "./wandb_api_key.txt"
