@@ -214,7 +214,6 @@ def train_timeseries_net(config, options):
     train_loader = DataLoader(train_ds, batch_size=config["batch_size"], shuffle=True)
 
     input_size, num_classes = options["params"].values()
-    num_epochs = options["num_epochs"]
     device = options["device"]
 
     # 2. instantiate model, criterion, optimizer
@@ -227,7 +226,7 @@ def train_timeseries_net(config, options):
                            weight_decay=config["weight_decay"], eps=config["eps"])
 
     # 3. training loop
-    for epoch in range(num_epochs):
+    for epoch in range(config["num_epochs"]):
         model.train()
 
         for _, (batch_x, batch_y) in enumerate(train_loader):

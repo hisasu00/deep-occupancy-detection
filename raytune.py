@@ -221,8 +221,8 @@ if __name__ == "__main__":
     start_date = start_date.strftime('%Y-%m-%d-%H-%M-%S')
     
     # Load Data
-    x = pd.read_csv("./data/2_X_train.csv").values
-    y = pd.read_csv("./data/2_Y_train.csv").values.reshape(-1)
+    x = pd.read_csv("./data/3_X_train.csv").values
+    y = pd.read_csv("./data/3_Y_train.csv").values.reshape(-1)
 
     sequence_length = 16
     num_days = int(x.shape[0] / sequence_length)
@@ -245,6 +245,7 @@ if __name__ == "__main__":
         "dropout_ratio_0": tune.uniform(0, 0.99),
         "dropout_ratio_1": tune.uniform(0, 0.99),
         "batch_size": tune.randint(2, 17),
+        "num_epochs": tune.randint(10, 200),
         "wandb": {
             "project": f"project_{start_date}",
             "api_key_file": "./wandb_api_key.txt"
@@ -272,7 +273,6 @@ if __name__ == "__main__":
             'train_x': None, 'train_y': None,
             'val_x': None, 'val_y': None
             },
-        "num_epochs": 100,
         "params": {"input_size": 13, "num_classes": 1},
         "device": device
     }
