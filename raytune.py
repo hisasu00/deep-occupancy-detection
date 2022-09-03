@@ -1,5 +1,4 @@
 from functools import partial
-from msilib import sequence
 import os
 import pickle
 
