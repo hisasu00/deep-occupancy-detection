@@ -209,6 +209,11 @@ def train_timeseries_net(config, options):
 
     # 1. assign some variables from options, instantiate DataLoader
     train_x, train_y, val_x, val_y = options["dataset"].values()
+    train_x = train_x.reshape(-1, config["sequence_length"], train_x.shape[2])
+    train_y = train_y.reshape(-1, config["sequence_length"], train_y.shape[2])
+    val_x = val_x.reshape(-1, config["sequence_length"], train_x.shape[2])
+    val_x = val_y.reshape(-1, config["sequence_length"], train_y.shape[2])
+
     train_ds = TensorDataset(train_x, train_y)
     train_loader = DataLoader(train_ds, batch_size=config["batch_size"], shuffle=True)
 

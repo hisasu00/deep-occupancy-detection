@@ -1,4 +1,5 @@
 from functools import partial
+from msilib import sequence
 import os
 import pickle
 
@@ -41,8 +42,8 @@ def pipeline_rnn(dataset, options, config, trainer=train_timeseries_net):
     )
 
     # test
-    model = standby_rnn_for_test(analysis, options)
-    acc = test(model, test_x, test_y, options["device"])
+    model, sequence_length = standby_rnn_for_test(analysis, options)
+    acc = test(model, test_x, test_y, options["device"], sequence_length)
     return acc
 
 
@@ -95,16 +96,19 @@ def standby_rnn_for_test(analysis, options):
     best = analysis.get_best_config(metric="loss", mode="min")
     logdir = analysis.get_best_logdir("loss", mode="min")
     state_dict = torch.load(os.path.join(logdir, "rnn.pth"))
+    sequence_length = best["sequence_length"]
 
     model = AttentionRNN(input_size=options["params"]["input_size"], hidden_size=best["hidden_size"],
                          num_layers=best["num_layers"], num_classes=options["params"]["num_classes"],
                          fc_sizes=[best["fc_size_0"], best["fc_size_1"], best["fc_size_2"]],
                          dropout_ratios=[best["dropout_ratio_0"], best["dropout_ratio_1"]]).to(options["device"])
     model.load_state_dict(state_dict)
-    return model
+    return model, sequence_length
 
 
-def test(model, test_x, test_y, device):
+def test(model, test_x, test_y, device, sequence_length):
+    test_x = test_x.reshape(-1, sequence_length, test_x.shape[2])
+    test_y = test_y.reshape(-1, sequence_length, test_y.shape[2])
     with torch.no_grad():
         model.eval()
         score_y = model(test_x, device).reshape(-1)
@@ -224,7 +228,7 @@ if __name__ == "__main__":
     x = pd.read_csv("./data/3_X_train.csv").values
     y = pd.read_csv("./data/3_Y_train.csv").values.reshape(-1)
 
-    sequence_length = 16
+    sequence_length = 1
     num_days = int(x.shape[0] / sequence_length)
     feature_size = x.shape[1]
     continuous_feature_size = 8
@@ -246,6 +250,7 @@ if __name__ == "__main__":
         "dropout_ratio_1": tune.uniform(0, 0.99),
         "batch_size": tune.randint(2, 17),
         "num_epochs": tune.randint(10, 200),
+        "sequece_length": tune.randint(2, 33),
         "wandb": {
             "project": f"project_{start_date}",
             "api_key_file": "./wandb_api_key.txt"
