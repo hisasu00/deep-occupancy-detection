@@ -228,7 +228,7 @@ if __name__ == "__main__":
     x = pd.read_csv("./data/3_X_train.csv").values
     y = pd.read_csv("./data/3_Y_train.csv").values.reshape(-1)
 
-    sequence_length = 1
+    sequence_length = 32
     num_days = int(x.shape[0] / sequence_length)
     feature_size = x.shape[1]
     continuous_feature_size = 8
@@ -250,7 +250,7 @@ if __name__ == "__main__":
         "dropout_ratio_1": tune.uniform(0, 0.99),
         "batch_size": tune.randint(2, 17),
         "num_epochs": tune.randint(10, 200),
-        "sequece_length": tune.randint(2, 33),
+        "sequence_length": tune.choice([2, 4, 8, 16]),
         "wandb": {
             "project": f"project_{start_date}",
             "api_key_file": "./wandb_api_key.txt"
