@@ -247,3 +247,24 @@ class TransformerAttention(nn.Module):
         # 3.3. Linear Layer
         out = self.fc(contexts)
         return out
+
+
+class AttentionNormBlock(nn.Module):
+    def __init__(self, hidden_size, num_heads, dropout_ratio, extend_dimension):
+        super().__init__()
+        self.attention = TransformerAttention(hidden_size, num_heads)
+        self.norm1 = nn.LayerNorm(hidden_size)
+        self.fc_block = nn.Sequential(
+            nn.Linear(hidden_size, extend_dimension*hidden_size),
+            nn.ReLU(),
+            nn.Linear(extend_dimension*hidden_size, hidden_size)
+        )
+        self.dropout = nn.Dropout(dropout_ratio)
+        self.norm2 = nn.LayerNorm(hidden_size)
+
+    def forward(self, values, keys, queries, mask):
+        out = self.attention(values, keys, queries, mask)
+        out_attention = self.dropout(self.norm1(out + queries))
+        out_fc = self.fc_block(out_attention)
+        out = self.dropout(self.norm2(out_fc + out_attention))
+        return out
