@@ -243,6 +243,7 @@ class TransformerAttention(nn.Module):
         # 3.3.2. qa * ad, get nhqd
         # 3.2.3. Reshape nhqd into nqhd
         contexts = contexts.reshape(N, query_len, self.num_heads*self.dim_head)
+        # contexts shape: (N, query_len, hidden_size)
 
         # 3.3. Linear Layer
         out = self.fc(contexts)
@@ -261,7 +262,6 @@ class AttentionNormBlock(nn.Module):
         )
         self.dropout = nn.Dropout(dropout_ratio)
         self.norm2 = nn.LayerNorm(hidden_size)
-
     def forward(self, values, keys, queries, mask):
         out = self.attention(values, keys, queries, mask)
         out_attention = self.dropout(self.norm1(out + queries))
@@ -278,10 +278,23 @@ class TransformerEncoder(nn.Module):
                 self.positional_enc = nn.Embedding(max_sequence, hidden_size)
                 self.attention_norm_block = AttentionNormBlock(hidden_size, num_heads, dropout_ratio, extend_dimension)
                 self.dropout = nn.Dropout(dropout_ratio)
-
     def forward(self, x, mask):
         N, T, _ = x.shape
         positions = torch.arange(0, T).expand(N, T).to(self.device)
         out = self.dropout(x+self.positional_enc(positions))
         out = self.attention_norm_block(values=out, keys=out, queries=out, mask=mask)
+        return out
+
+
+class DecoderBlock(nn.Module):
+    def __init__(self, hidden_size, num_heads, extend_dimension, dropout_ratio):
+        super().__init__()
+        self.attention = TransformerAttention(hidden_size, num_heads)
+        self.norm = nn.LayerNorm(hidden_size)
+        self.attention_norm_block = AttentionNormBlock(hidden_size, num_heads, dropout_ratio, extend_dimension)
+        self.dropout = nn.Dropout(dropout_ratio)
+    def forward(self, x, values, keys, mask):
+        attention = self.attention(values=x, keys=x, queries=x, mask=mask)
+        queries = self.dropout(self.norm(attention + x))
+        out = self.attention_norm_block(values, keys, queries, mask=None)
         return out
