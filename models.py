@@ -268,3 +268,20 @@ class AttentionNormBlock(nn.Module):
         out_fc = self.fc_block(out_attention)
         out = self.dropout(self.norm2(out_fc + out_attention))
         return out
+
+
+class TransformerEncoder(nn.Module):
+    def __init__(self, hidden_size, num_heads, device,
+                 extend_dimension, dropout_ratio, max_sequence):
+                super().__init__()
+                self.device = device
+                self.positional_enc = nn.Embedding(max_sequence, hidden_size)
+                self.attention_norm_block = AttentionNormBlock(hidden_size, num_heads, dropout_ratio, extend_dimension)
+                self.dropout = nn.Dropout(dropout_ratio)
+
+    def forward(self, x, mask):
+        N, T, _ = x.shape
+        positions = torch.arange(0, T).expand(N, T).to(self.device)
+        out = self.dropout(x+self.positional_enc(positions))
+        out = self.attention_norm_block(values=out, keys=out, queries=out, mask=mask)
+        return out
