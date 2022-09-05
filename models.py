@@ -279,12 +279,12 @@ class TransformerEncoder(nn.Module):
                 self.fc = nn.Linear(input_size, hidden_size)
                 self.attention_norm_block = AttentionNormBlock(hidden_size, num_heads, dropout_ratio, extend_dimension)
                 self.dropout = nn.Dropout(dropout_ratio)
-    def forward(self, x, mask):
+    def forward(self, x):
         N, T, _ = x.shape
         positions = torch.arange(0, T).expand(N, T).to(self.device)
         out = self.dropout(x+self.positional_enc(positions))
         out = self.fc(out)
-        out = self.attention_norm_block(values=out, keys=out, queries=out, mask=mask)
+        out = self.attention_norm_block(values=out, keys=out, queries=out, mask=None)
         return out
 
 
@@ -320,3 +320,21 @@ class TransformerDecoder(nn.Module):
         out = self.decoder_block(x=out, values=enc_out, keys=enc_out, mask=mask)
         out = self.fc2(out)
         return out
+
+
+class Transformer(nn.Module):
+    def __init__(self, input_size, hidden_size, extend_dimension, num_heads,
+                 dropout_ratio, device, max_sequece, output_size):
+        super().__init__()
+        self.encoder = TransformerEncoder(input_size, hidden_size, num_heads, device, extend_dimension, dropout_ratio, max_sequece)
+        self.decoder = TransformerDecoder(input_size, hidden_size, extend_dimension, num_heads, dropout_ratio, device, max_sequece, output_size)
+        self.device = device
+    def make_mask(self, y):
+        N, T, _ = y.shape
+        mask = torch.tril(torch.ones((T, T))).expand(N, 1, T, T)
+        return mask.to(self.device)
+    def forward(self, x, y):
+        mask = self.make_mask(y)
+        enc_out = self.encoder(x)
+        dec_out = self.decoder(y, enc_out, mask)
+        return dec_out
