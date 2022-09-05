@@ -300,3 +300,23 @@ class DecoderBlock(nn.Module):
         queries = self.dropout(self.norm(attention + x))
         out = self.attention_norm_block(values, keys, queries, mask=None)
         return out
+
+
+class TransformerDecoder(nn.Module):
+    def __init__(self, input_size, hidden_size, extend_dimenstion, num_heads,
+                 dropout_ratio, device, max_sequence, output_size):
+        super().__init__()
+        self.device = device
+        self.positional_enc = nn.Embedding(max_sequence, input_size)
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.decoder_block = DecoderBlock(hidden_size, num_heads, extend_dimenstion, dropout_ratio)
+        self.fc2 = nn.Linear(hidden_size, output_size)
+        self.dropout = nn.Dropout(dropout_ratio)
+    def forward(self, y, enc_out, mask):
+        N, T, _ = y.shape
+        positions = torch.arange(0, T).expand(N, T).to(self.device)
+        y = self.dropout(y + self.positional_enc(positions))
+        out = self.fc1(y)
+        out = self.decoder_block(x=out, values=enc_out, keys=enc_out, mask=mask)
+        out = self.fc2(out)
+        return out
