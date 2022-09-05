@@ -323,11 +323,11 @@ class TransformerDecoder(nn.Module):
 
 
 class Transformer(nn.Module):
-    def __init__(self, input_size, hidden_size, extend_dimension, num_heads,
+    def __init__(self, enc_input_size, dec_input_size, hidden_size, extend_dimension, num_heads,
                  dropout_ratio, device, max_sequece, output_size):
         super().__init__()
-        self.encoder = TransformerEncoder(input_size, hidden_size, num_heads, device, extend_dimension, dropout_ratio, max_sequece)
-        self.decoder = TransformerDecoder(input_size, hidden_size, extend_dimension, num_heads, dropout_ratio, device, max_sequece, output_size)
+        self.encoder = TransformerEncoder(enc_input_size, hidden_size, num_heads, device, extend_dimension, dropout_ratio, max_sequece)
+        self.decoder = TransformerDecoder(dec_input_size, hidden_size, extend_dimension, num_heads, dropout_ratio, device, max_sequece, output_size)
         self.device = device
     def make_mask(self, y):
         N, T, _ = y.shape
