@@ -201,3 +201,49 @@ def get_contexts_and_decoderhs_by_attention(encoder_hs, decoder_hs, device):
 
         outputs[:, t, :] = torch.cat((context_vector, decoder_hs[:, t, :]), dim=1)
     return outputs
+
+
+class TransformerAttention(nn.Module):
+    def __init__(self, hidden_size, num_heads):
+        super().__init__()
+        self.num_heads = num_heads
+        self.dim_head = hidden_size // num_heads
+
+        self.values = nn.Linear(self.dim_head, self.dim_head, bias=False)
+        self.keys = nn.Linear(self.dim_head, self.dim_head, bias=False)
+        self.queries = nn.Linear(self.dim_head, self.dim_head, bias=False)
+        self.fc = nn.Linear(self.dim_head*self.num_heads, hidden_size)
+
+    def forward(self, values, keys, queries, mask):
+        N, query_len, _ = queries.shape
+        value_len, key_len = values.shape[1], keys.shape[1]
+
+        # 1. Split hidden size into several heads pieces
+        values = values.reshape(N, value_len, self.num_heads, self.dim_head)
+        keys = keys.reshape(N, key_len, self.num_heads, self.dim_head)
+        queries = queries.reshape(N, query_len, self.num_heads, self.dim_head)
+
+        # 2. Linear Layer
+        values = self.values(values)
+        keys = self.values(keys)
+        queries = self.queries(queries)
+
+        # 3. Attention Layer
+        # 3.1. Get attention weight by inner product and softmax
+        attention = torch.einsum("nqhd, nkhd -> nhqk", [queries, keys])
+        if mask is not None:
+            attention = attention.masked_fill(mask == 0, float("1e-30"))
+        attention = torch.softmax(attention, dim=3)
+        # attention shape: (N, num_heads. query_len, key_len)
+
+        # 3.2. Get context by weighted sum
+        contexts = torch.einsum("nhqa, nahd -> nqhd", [attention, values])
+        # above einsum internally calulates like
+        # 3.2.1. Reshape nahd into nhad
+        # 3.3.2. qa * ad, get nhqd
+        # 3.2.3. Reshape nhqd into nqhd
+        contexts = contexts.reshape(N, query_len, self.num_heads*self.dim_head)
+
+        # 3.3. Linear Layer
+        out = self.fc(contexts)
+        return out
