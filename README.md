@@ -1,3 +1,3 @@
 # deep-occupancy-detection
 - data is from: https://www.vs.inf.ethz.ch/res/show.html?what=eco-data
-- related paper: https://
+- related paper: https://iecon2022.org/
