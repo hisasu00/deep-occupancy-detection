@@ -32,6 +32,7 @@ def pipeline_rnn(dataset, options, config, trainer=train_timeseries_net):
 
     analysis = tune.run(
         partial(trainer, options=options),
+        # TODO: Understand partial
         config=config,
         num_samples=50,
         search_alg=hyperopt,
